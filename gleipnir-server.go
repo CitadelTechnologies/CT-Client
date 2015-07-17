@@ -57,7 +57,8 @@ func init() {
 
     }
 
-    if Server.Conn, err := net.Dial("tcp", ":" + gs.KernelPort); err != nil {
+    var error err
+    if Server.Conn, err = net.Dial("tcp", ":" + gs.KernelPort); err != nil {
         panic(err)
     }
 
