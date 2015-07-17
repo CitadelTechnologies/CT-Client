@@ -41,8 +41,8 @@ var Server GleipnirServer
 
 func init() {
 
-    flag.StringVar(&Server.DedicatedPort, "port", "0", "The Server port")
-    flag.StringVar(&Server.KernelPort, "port", "0", "The Server port")
+    flag.StringVar(&Server.DedicatedPort, "service-port", "0", "The Server port")
+    flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Server port")
     flag.Parse()
 
     if(Server.DedicatedPort == "0") {
