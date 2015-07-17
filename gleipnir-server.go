@@ -84,13 +84,13 @@ func (gs *GleipnirServer) refreshStatus() {
 func (gs *GleipnirServer) writeToKernel(command string) {
     gs.refreshStatus()
 
-    message := new Message{Command: command, Emmitter: gs.TokenId, Status: gs.Status}
+    message := Message{Command: command, Emmitter: gs.TokenId, Status: gs.Status}
 
     if json, err := json.Marshal(message); err != nil {
         panic(err)
     }
 
-    if _, err = gs.Conn.Write(data); err != nil {
+    if _, err = gs.Conn.Write(json); err != nil {
         panic(err)
     }
 }
