@@ -86,7 +86,9 @@ func (gs *GleipnirServer) writeToKernel(command string) {
 
     message := Message{Command: command, Emmitter: gs.TokenId, Status: gs.Status}
 
-    if data, err := json.Marshal(message); err != nil {
+    data := make([]byte, 2048)
+    var err error
+    if data, err = json.Marshal(message); err != nil {
         panic(err)
     }
 
