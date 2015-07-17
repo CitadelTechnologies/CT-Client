@@ -14,7 +14,7 @@ type(
 
     GleipnirServer struct {
 
-        Conn net.TCPConn
+        Conn net.Conn
         TokenId string
         KernelPort string
         DedicatedPort string
@@ -57,13 +57,13 @@ func init() {
 
     }
 
-    var error err
-    if Server.Conn, err = net.Dial("tcp", ":" + gs.KernelPort); err != nil {
+    var err error
+    if Server.Conn, err = net.Dial("tcp", ":" + Server.KernelPort); err != nil {
         panic(err)
     }
 
     Server.Status.StartedAt = time.Now()
-    Server.writeToKernel()
+    Server.writeToKernel("connect")
 
 }
 
@@ -86,11 +86,11 @@ func (gs *GleipnirServer) writeToKernel(command string) {
 
     message := Message{Command: command, Emmitter: gs.TokenId, Status: gs.Status}
 
-    if json, err := json.Marshal(message); err != nil {
+    if data, err := json.Marshal(message); err != nil {
         panic(err)
     }
 
-    if _, err = gs.Conn.Write(json); err != nil {
+    if _, err := gs.Conn.Write(data); err != nil {
         panic(err)
     }
 }
@@ -99,7 +99,7 @@ func (gs *GleipnirServer) readFromKernel() []byte {
 
     buffer := make([]byte, 2048)
 
-    if _, err := gs.Conn.Read(&buffer); err != nil {
+    if _, err := gs.Conn.Read(buffer); err != nil {
         panic(err)
     }
 
