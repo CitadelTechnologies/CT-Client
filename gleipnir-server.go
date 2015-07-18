@@ -3,11 +3,15 @@
 package GleipnirServer
 
 import(
+    "fmt"
+    "os"
     "flag"
     "net"
     "runtime"
     "time"
     "encoding/json"
+    "encoding/gob"
+    "bytes"
 )
 
 type(
@@ -41,6 +45,20 @@ var Server GleipnirServer
 
 func init() {
 
+    defer func(){
+        if r := recover(); r != nil {
+            fmt.Println(r)
+            var buf bytes.Buffer
+            enc := gob.NewEncoder(&buf)
+            enc.Encode(r)
+
+            f, _ := os.Create("errors.txt")
+            defer f.Close()
+            f.Write(buf.Bytes())
+            os.Exit(2)
+        }
+    }()
+
     flag.StringVar(&Server.DedicatedPort, "service-port", "0", "The Server port")
     flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Server port")
     flag.Parse()
@@ -58,7 +76,7 @@ func init() {
     }
 
     var err error
-    if Server.Conn, err = net.Dial("tcp", ":" + Server.KernelPort); err != nil {
+    if Server.Conn, err = net.Dial("tcp", "127.0.0.1:" + Server.KernelPort); err != nil {
         panic(err)
     }
 
