@@ -48,7 +48,7 @@ type(
 
 var Server GleipnirServer
 
-func init() {
+func Initialize() {
 
     defer func(){
         if r := recover(); r != nil {
