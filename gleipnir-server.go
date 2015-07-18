@@ -22,27 +22,26 @@ type(
         TokenId string
         KernelPort string
         DedicatedPort string
-        Status Status
-
+        Status ServerStatus
     }
     Message struct {
-
         Command string `json:"command"`
         Emmitter string `json:"emmitter"`
         Status Status `json:"status"`
-
     }
     Response struct {
-
         Command string `json:"command"`
-
+    }
+    ServerStatus struct {
+        StartedAt time.Time
+        UpdatedAt time.Time `json:"updated_at"`
+        MemoryStats runtime.MemStats
     }
     Status struct {
-
         StartedAt time.Time `json:"started_at"`
         UpdatedAt time.Time `json:"updated_at"`
-        MemoryStats runtime.MemStats `json:"memory_stats"`
-
+        ConsumedMemory uint64 `json:"consumed_memory"`
+        AllocatedMemory uint64 `json:"allocated_memory"`
     }
 )
 
@@ -67,46 +66,45 @@ func Initialize() {
     flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Server port")
     flag.Parse()
 
-    if(Server.DedicatedPort == "0") {
-
+    if Server.DedicatedPort == "0" {
         panic("The API port flag must be given")
-
     }
-
-    if(Server.KernelPort == "0") {
-
+    if Server.KernelPort == "0" {
         panic("The Kernel port flag must be given")
-
     }
-
     var err error
     if Server.Conn, err = net.Dial("tcp", "127.0.0.1:" + Server.KernelPort); err != nil {
         panic(err)
     }
-
     Server.Status.StartedAt = time.Now()
     Server.writeToKernel("connect")
 
 }
 
 func Shutdown() {
-
     Server.Conn.Close()
-
 }
 
 func (gs *GleipnirServer) refreshStatus() {
-
      runtime.ReadMemStats(&gs.Status.MemoryStats)
      gs.Status.UpdatedAt = time.Now()
-
 }
 
 // This method accepts encoded JSON and send it to the Kernel
 func (gs *GleipnirServer) writeToKernel(command string) {
     gs.refreshStatus()
 
-    message := Message{Command: command, Emmitter: gs.TokenId, Status: gs.Status}
+    status := Status {
+        StartedAt: gs.Status.StartedAt,
+        UpdatedAt: gs.Status.UpdatedAt,
+        ConsumedMemory: gs.Status.MemoryStats.HeapAlloc,
+        AllocatedMemory: gs.Status.MemoryStats.HeapSys,
+    }
+    message := Message {
+        Command: command,
+        Emmitter: gs.TokenId,
+        Status: status,
+    }
 
     data := make([]byte, unsafe.Sizeof(message))
     var err error
