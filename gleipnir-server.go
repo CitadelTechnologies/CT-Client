@@ -3,7 +3,6 @@
 package GleipnirServer
 
 import(
-    "fmt"
     "os"
     "flag"
     "net"
@@ -12,6 +11,7 @@ import(
     "encoding/json"
     "encoding/gob"
     "bytes"
+    "unsafe"
 )
 
 type(
@@ -32,6 +32,11 @@ type(
         Status Status `json:"status"`
 
     }
+    Response struct {
+
+        Command string `json:"command"`
+
+    }
     Status struct {
 
         StartedAt time.Time `json:"started_at"`
@@ -47,7 +52,6 @@ func init() {
 
     defer func(){
         if r := recover(); r != nil {
-            fmt.Println(r)
             var buf bytes.Buffer
             enc := gob.NewEncoder(&buf)
             enc.Encode(r)
@@ -104,7 +108,7 @@ func (gs *GleipnirServer) writeToKernel(command string) {
 
     message := Message{Command: command, Emmitter: gs.TokenId, Status: gs.Status}
 
-    data := make([]byte, 2048)
+    data := make([]byte, unsafe.Sizeof(message))
     var err error
     if data, err = json.Marshal(message); err != nil {
         panic(err)
@@ -117,11 +121,14 @@ func (gs *GleipnirServer) writeToKernel(command string) {
 
 func (gs *GleipnirServer) readFromKernel() []byte {
 
-    buffer := make([]byte, 2048)
+    var response Response
+    buffer := make([]byte, unsafe.Sizeof(response))
 
     if _, err := gs.Conn.Read(buffer); err != nil {
         panic(err)
     }
+
+    json.Unmarshal(buffer, &response)
 
     return buffer
 }
