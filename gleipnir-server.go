@@ -30,7 +30,8 @@ type(
         Status Status `json:"status"`
     }
     Response struct {
-        Command string `json:"command"`
+        Status int `json:"status"`
+        Message string `json:"message"`
     }
     ServerStatus struct {
         StartedAt time.Time
@@ -121,7 +122,7 @@ func (gs *GleipnirServer) writeToKernel(command string) {
     }
 }
 
-func (gs *GleipnirServer) readFromKernel() []byte {
+func (gs *GleipnirServer) readFromKernel() Response {
 
     var response Response
     buffer := make([]byte, unsafe.Sizeof(response))
@@ -132,5 +133,5 @@ func (gs *GleipnirServer) readFromKernel() []byte {
 
     json.Unmarshal(buffer, &response)
 
-    return buffer
+    return response
 }
