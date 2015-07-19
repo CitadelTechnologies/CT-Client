@@ -19,7 +19,7 @@ type(
     GleipnirServer struct {
 
         Conn net.Conn
-        TokenId string
+        Token string
         KernelPort string
         DedicatedPort string
         Status ServerStatus
@@ -62,10 +62,14 @@ func Initialize() {
         }
     }()
 
-    flag.StringVar(&Server.DedicatedPort, "service-port", "0", "The Server port")
-    flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Server port")
+    flag.StringVar(&Server.Token, "token", "0", "The Service token")
+    flag.StringVar(&Server.DedicatedPort, "service-port", "0", "The Service port")
+    flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Kernel port")
     flag.Parse()
 
+    if Server.Token == "0" {
+        panic("The service token flag must be given")
+    }
     if Server.DedicatedPort == "0" {
         panic("The API port flag must be given")
     }
@@ -102,7 +106,7 @@ func (gs *GleipnirServer) writeToKernel(command string) {
     }
     message := Message {
         Command: command,
-        Emmitter: gs.TokenId,
+        Emmitter: gs.Token,
         Status: status,
     }
 
