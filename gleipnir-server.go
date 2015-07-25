@@ -3,21 +3,17 @@
 package GleipnirServer
 
 import(
-    "os"
     "flag"
     "net"
     "runtime"
     "time"
     "encoding/json"
-    "encoding/gob"
-    "bytes"
     "unsafe"
+    "errors"
 )
 
 type(
-
     GleipnirServer struct {
-
         Conn net.Conn
         Token string
         KernelPort string
@@ -49,41 +45,26 @@ type(
 var Server GleipnirServer
 
 func Initialize() {
-
-    defer func(){
-        if r := recover(); r != nil {
-            var buf bytes.Buffer
-            enc := gob.NewEncoder(&buf)
-            enc.Encode(r)
-
-            f, _ := os.Create("errors.txt")
-            defer f.Close()
-            f.Write(buf.Bytes())
-            os.Exit(2)
-        }
-    }()
-
     flag.StringVar(&Server.Token, "token", "0", "The Service token")
     flag.StringVar(&Server.DedicatedPort, "service-port", "0", "The Service port")
     flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Kernel port")
     flag.Parse()
 
     if Server.Token == "0" {
-        panic("The service token flag must be given")
+        CheckError(errors.New("The service token flag must be given"))
     }
     if Server.DedicatedPort == "0" {
-        panic("The API port flag must be given")
+        CheckError(errors.New("The API port flag must be given"))
     }
     if Server.KernelPort == "0" {
-        panic("The Kernel port flag must be given")
+        CheckError(errors.New("The Kernel port flag must be given"))
     }
     var err error
-    if Server.Conn, err = net.Dial("tcp", "127.0.0.1:" + Server.KernelPort); err != nil {
-        panic(err)
-    }
+    Server.Conn, err = net.Dial("tcp", ":" + Server.KernelPort)
+    CheckError(err)
+
     Server.Status.StartedAt = time.Now()
     Server.writeToKernel("connect")
-
 }
 
 func Shutdown() {
@@ -95,7 +76,9 @@ func (gs *GleipnirServer) refreshStatus() {
      gs.Status.UpdatedAt = time.Now()
 }
 
-// This method accepts encoded JSON and send it to the Kernel
+/*
+ *  This method accepts encoded JSON and send it to the Kernel
+ */
 func (gs *GleipnirServer) writeToKernel(command string) {
     gs.refreshStatus()
 
@@ -113,13 +96,11 @@ func (gs *GleipnirServer) writeToKernel(command string) {
 
     data := make([]byte, unsafe.Sizeof(message))
     var err error
-    if data, err = json.Marshal(message); err != nil {
-        panic(err)
-    }
+    data, err = json.Marshal(message)
+    CheckError(err)
 
-    if _, err := gs.Conn.Write(data); err != nil {
-        panic(err)
-    }
+    _, err = gs.Conn.Write(data)
+    CheckError(err)
 }
 
 func (gs *GleipnirServer) readFromKernel() Response {
@@ -127,9 +108,8 @@ func (gs *GleipnirServer) readFromKernel() Response {
     var response Response
     buffer := make([]byte, unsafe.Sizeof(response))
 
-    if _, err := gs.Conn.Read(buffer); err != nil {
-        panic(err)
-    }
+    _, err := gs.Conn.Read(buffer)
+    CheckError(err)
 
     json.Unmarshal(buffer, &response)
 
