@@ -3,6 +3,7 @@
 package GleipnirServer
 
 import(
+    "os"
     "flag"
     "net"
     "runtime"
@@ -59,12 +60,11 @@ func Initialize() {
     if Server.KernelPort == "0" {
         CheckError(errors.New("The Kernel port flag must be given"))
     }
-    var err error
-
     Server.connect()
 }
 
 func (s *GleipnirServer) connect() {
+    var err error
     s.Conn, err = net.Dial("tcp", ":" + s.KernelPort)
     CheckError(err)
 
@@ -75,8 +75,9 @@ func (s *GleipnirServer) connect() {
     }
 }
 
-func Shutdown() {
+func (s *GleipnirServer) Shutdown() {
     Server.Conn.Close()
+    os.Exit(2)
 }
 
 func (gs *GleipnirServer) refreshStatus() {
