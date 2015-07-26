@@ -60,11 +60,19 @@ func Initialize() {
         CheckError(errors.New("The Kernel port flag must be given"))
     }
     var err error
-    Server.Conn, err = net.Dial("tcp", ":" + Server.KernelPort)
+
+    Server.connect()
+}
+
+func (s *GleipnirServer) connect() {
+    s.Conn, err = net.Dial("tcp", ":" + s.KernelPort)
     CheckError(err)
 
-    Server.Status.StartedAt = time.Now()
-    Server.writeToKernel("connect")
+    s.Status.StartedAt = time.Now()
+    s.writeToKernel("connect")
+    if response := s.readFromKernel(); response.Status != 200 {
+        CheckError(errors.New(response.Message))
+    }
 }
 
 func Shutdown() {
