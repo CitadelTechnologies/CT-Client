@@ -38,8 +38,12 @@ type(
     Status struct {
         StartedAt time.Time `json:"started_at"`
         UpdatedAt time.Time `json:"updated_at"`
-        ConsumedMemory uint64 `json:"consumed_memory"`
-        AllocatedMemory uint64 `json:"allocated_memory"`
+        HeapAlloc uint64 `json:"heap_alloc"`
+        HeapSys uint64 `json:"heap_sys"`
+        EnableGC bool `json:"enable_gc"`
+        LastGC uint64 `json:"last_gc"`
+        NextGC uint64 `json:"next_gc"`
+        NumGC uint32 `json:"num_gc"`
     }
 )
 
@@ -65,7 +69,7 @@ func Initialize() {
 
 func (s *GleipnirServer) connect() {
     var err error
-    s.Conn, err = net.Dial("tcp", ":" + s.KernelPort)
+    s.Conn, err = net.Dial("tcp", "0.0.0.0:" + s.KernelPort)
     CheckError(err)
 
     s.Status.StartedAt = time.Now()
@@ -94,8 +98,12 @@ func (gs *GleipnirServer) writeToKernel(command string) {
     status := Status {
         StartedAt: gs.Status.StartedAt,
         UpdatedAt: gs.Status.UpdatedAt,
-        ConsumedMemory: gs.Status.MemoryStats.HeapAlloc,
-        AllocatedMemory: gs.Status.MemoryStats.HeapSys,
+        HeapAlloc: gs.Status.MemoryStats.HeapAlloc,
+        HeapSys: gs.Status.MemoryStats.HeapSys,
+        EnableGC: gs.Status.MemoryStats.EnableGC,
+        LastGC: gs.Status.MemoryStats.LastGC,
+        NextGC: gs.Status.MemoryStats.NextGC,
+        NumGC: gs.Status.MemoryStats.NumGC,
     }
     message := Message {
         Command: command,
