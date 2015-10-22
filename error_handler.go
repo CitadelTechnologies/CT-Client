@@ -1,4 +1,4 @@
-package GleipnirServer
+package ctclient
 
 import(
     "os"

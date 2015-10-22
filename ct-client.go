@@ -1,6 +1,6 @@
-// Package to create an API compatible with Gleipnir
+// Package to create an API compatible with CT-Core
 // Contains some utils to launch the program and communicate with the Kernel
-package GleipnirServer
+package ctclient
 
 import(
     "os"
@@ -14,7 +14,7 @@ import(
 )
 
 type(
-    GleipnirServer struct {
+    CtClient struct {
         Conn net.Conn
         Token string
         KernelPort string
@@ -47,7 +47,7 @@ type(
     }
 )
 
-var Server GleipnirServer
+var Server CtClient
 
 func Initialize() {
     flag.StringVar(&Server.Token, "token", "0", "The Service token")
@@ -67,47 +67,47 @@ func Initialize() {
     Server.connect()
 }
 
-func (s *GleipnirServer) connect() {
+func (client *CtClient) connect() {
     var err error
-    s.Conn, err = net.Dial("tcp", "0.0.0.0:" + s.KernelPort)
+    client.Conn, err = net.Dial("tcp", "0.0.0.0:" + client.KernelPort)
     CheckError(err)
 
-    s.Status.StartedAt = time.Now()
-    s.writeToKernel("connect")
-    if response := s.readFromKernel(); response.Status != 200 {
+    client.Status.StartedAt = time.Now()
+    client.writeToKernel("connect")
+    if response := client.readFromKernel(); response.Status != 200 {
         CheckError(errors.New(response.Message))
     }
 }
 
-func (s *GleipnirServer) Shutdown() {
+func (client *CtClient) Shutdown() {
     Server.Conn.Close()
     os.Exit(2)
 }
 
-func (gs *GleipnirServer) refreshStatus() {
-     runtime.ReadMemStats(&gs.Status.MemoryStats)
-     gs.Status.UpdatedAt = time.Now()
+func (client *CtClient) refreshStatus() {
+     runtime.ReadMemStats(&client.Status.MemoryStats)
+     client.Status.UpdatedAt = time.Now()
 }
 
 /*
  *  This method accepts encoded JSON and send it to the Kernel
  */
-func (gs *GleipnirServer) writeToKernel(command string) {
-    gs.refreshStatus()
+func (client *CtClient) writeToKernel(command string) {
+    client.refreshStatus()
 
     status := Status {
-        StartedAt: gs.Status.StartedAt,
-        UpdatedAt: gs.Status.UpdatedAt,
-        HeapAlloc: gs.Status.MemoryStats.HeapAlloc,
-        HeapSys: gs.Status.MemoryStats.HeapSys,
-        EnableGC: gs.Status.MemoryStats.EnableGC,
-        LastGC: gs.Status.MemoryStats.LastGC,
-        NextGC: gs.Status.MemoryStats.NextGC,
-        NumGC: gs.Status.MemoryStats.NumGC,
+        StartedAt: client.Status.StartedAt,
+        UpdatedAt: client.Status.UpdatedAt,
+        HeapAlloc: client.Status.MemoryStats.HeapAlloc,
+        HeapSys: client.Status.MemoryStats.HeapSys,
+        EnableGC: client.Status.MemoryStats.EnableGC,
+        LastGC: client.Status.MemoryStats.LastGC,
+        NextGC: client.Status.MemoryStats.NextGC,
+        NumGC: client.Status.MemoryStats.NumGC,
     }
     message := Message {
         Command: command,
-        Emmitter: gs.Token,
+        Emmitter: client.Token,
         Status: status,
     }
 
@@ -116,16 +116,16 @@ func (gs *GleipnirServer) writeToKernel(command string) {
     data, err = json.Marshal(message)
     CheckError(err)
 
-    _, err = gs.Conn.Write(data)
+    _, err = client.Conn.Write(data)
     CheckError(err)
 }
 
-func (gs *GleipnirServer) readFromKernel() Response {
+func (client *CtClient) readFromKernel() Response {
 
     var response Response
     buffer := make([]byte, unsafe.Sizeof(response))
 
-    _, err := gs.Conn.Read(buffer)
+    _, err := client.Conn.Read(buffer)
     CheckError(err)
 
     json.Unmarshal(buffer, &response)
