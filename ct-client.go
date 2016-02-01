@@ -50,6 +50,13 @@ type(
 var Server CtClient
 
 func Initialize() {
+    var controlFlag bool
+    flag.BoolVar(&controlFlag, "core-activation", false, "Boolean to enable core transmissions")
+
+    if !controlFlag {
+        return
+    }
+
     flag.StringVar(&Server.Token, "token", "0", "The Service token")
     flag.StringVar(&Server.DedicatedPort, "service-port", "0", "The Service port")
     flag.StringVar(&Server.KernelPort, "kernel-port", "0", "The Kernel port")
